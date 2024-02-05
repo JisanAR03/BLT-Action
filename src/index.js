@@ -8,9 +8,37 @@ const run = async () => {
     const octokit = github.getOctokit(gitHubToken);
     console.log(repository);
 
-    const { issue, comment } = github.context.payload;
-
+    const { eventName, payload } = github.context;
+    const { issue, comment } = payload;
     const [owner, repo] = repository.split('/');
+    console.log(eventName);
+    if (eventName === 'issue_comment' && issue && comment) {
+        console.log('processing issue comment');
+        const commentBody = comment.body.toLowerCase(); // Convert to lower case for case-insensitive comparison
+        const assignKeywords = ['/assign', 'assign to me', 'assign this to me', 'please assign me this', 'i can try fixing this', 'i am interested in doing this', 'i am interested in contributing'];
+        const unassignKeywords = ['/unassign'];
+
+        const shouldAssign = assignKeywords.some(keyword => commentBody.includes(keyword));
+        const shouldUnassign = unassignKeywords.some(keyword => commentBody.startsWith(keyword));
+
+        if (shouldAssign) {
+            console.log(`Assigning issue #${issue.number} to ${comment.user.login}`);
+            await octokit.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issue.number,
+                assignees: [comment.user.login]
+            });
+        } else if (shouldUnassign) {
+            console.log(`Unassigning issue #${issue.number} from ${comment.user.login}`);
+            await octokit.issues.removeAssignees({
+                owner,
+                repo,
+                issue_number: issue.number,
+                assignees: [comment.user.login]
+            });
+        }
+    }
 
     if (issue) {
         console.log('processing issue');
