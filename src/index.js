@@ -3,6 +3,7 @@ const github = require('@actions/github');
 
 const run = async () => {
     console.log("starting");
+    console.log(github.context.eventName);
     const gitHubToken = core.getInput('repo-token', { required: true });
     const githubOwner = github.context.repo.owner;
     const githubRepo = github.context.repo.repo;
